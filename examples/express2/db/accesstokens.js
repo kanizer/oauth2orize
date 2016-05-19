@@ -10,3 +10,7 @@ exports.save = function(token, userID, clientID, done) {
   tokens[token] = { userID: userID, clientID: clientID };
   return done(null);
 };
+
+exports.cheat = function() {
+    return tokens;
+};

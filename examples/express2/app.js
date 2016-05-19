@@ -7,6 +7,7 @@ var express = require('express')
   , oauth2 = require('./oauth2')
   , user = require('./user')
   , util = require('util')
+  , db = require('./db')
 
 
 // Express configuration
@@ -43,12 +44,14 @@ app.post('/login', site.login);
 app.get('/logout', site.logout);
 app.get('/account', site.account);
 
+var auth_redirect_path = '/dialog/authorize/grant';
+
 app.get('/dialog/authorize',
   // spoof req'd query params
   function(req, res, next) {
     req.query.response_type = 'code';
     req.query.client_id = 'abc123';
-    req.query.redirect_uri = '/dialog/authorize/grant'; // where a grant response redirects to
+    req.query.redirect_uri = auth_redirect_path; // where a grant response redirects to
 
     next();
   },
@@ -71,10 +74,10 @@ app.post('/oauth/token',
   // spoof req'd query params
   function(req, res, next) {
     // add client creds to `Authorization` header
-    // req.body.client_id = 'abc123';
-    // req.body.client_secret = 'ssh-secret';
+    req.body.client_id = 'abc123';
+    req.body.client_secret = 'ssh-secret';
 
-    req.body.redirect_uri = '/dialog/authorize/grant'; // where a grant response redirects to
+    req.body.redirect_uri = auth_redirect_path; // where a grant response redirects to
     req.body.grant_type = 'authorization_code';
     // req.query.code = req.body.code; // required but passed in from form
 
@@ -100,12 +103,15 @@ app.get('/api/userinfo',
     // TODO - PASS TOKEN AS PARAM WITH REQUEST FROM CLIENT
 
 
+    var token = Object.keys(db.accessTokens.cheat())[0];
+
     req.body.access_token = token;
 
     next();
   },
 
-  user.info);
+  user.info
+);
 
 
 app.listen(3000);

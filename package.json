@@ -34,9 +34,10 @@
   ],
   "main": "./lib",
   "dependencies": {
+    "debug": "2.x.x",
+    "request": "^2.72.0",
     "uid2": "0.0.x",
-    "utils-merge": "1.x.x",
-    "debug": "2.x.x"
+    "utils-merge": "1.x.x"
   },
   "devDependencies": {
     "make-node": "0.3.x",
@@ -49,6 +50,7 @@
     "node": ">= 0.4.0"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha --reporter spec --require test/bootstrap/node test/*.test.js test/**/*.test.js"
+    "test": "node_modules/.bin/mocha --reporter spec --require test/bootstrap/node test/*.test.js test/**/*.test.js",
+    "start": "cd examples/express2 && nodemon app.js"
   }
 }
