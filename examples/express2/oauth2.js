@@ -50,7 +50,6 @@ server.deserializeClient(function(id, done) {
 
 server.grant(oauth2orize.grant.code(function(client, redirectURI, user, ares, done) {
   var code = utils.uid(16)
-  
   db.authorizationCodes.save(code, client.id, redirectURI, user.id, function(err) {
     if (err) { return done(err); }
     done(null, code);
@@ -65,7 +64,9 @@ server.grant(oauth2orize.grant.code(function(client, redirectURI, user, ares, do
 
 server.exchange(oauth2orize.exchange.code(function(client, code, redirectURI, done) {
   db.authorizationCodes.find(code, function(err, authCode) {
-    if (err) { return done(err); }
+    if (err) {
+      return done(err);
+    }
     if (authCode === undefined) { return done(null, false); }
     if (client.id !== authCode.clientID) { return done(null, false); }
     if (redirectURI !== authCode.redirectURI) { return done(null, false); }
@@ -97,24 +98,52 @@ server.exchange(oauth2orize.exchange.code(function(client, code, redirectURI, do
 // the application's responsibility to authenticate the user and render a dialog
 // to obtain their approval (displaying details about the client requesting
 // authorization).  We accomplish that here by routing through `ensureLoggedIn()`
-// first, and rendering the `dialog` view. 
+// first, and rendering the `dialog` view.
+
+
+/**
+* required params:
+* - response_type=code
+* - client_id=[predefined in db.clients in this example]
+* - redirect_uri=...
+*/
+
 
 exports.authorization = [
+
   login.ensureLoggedIn(),
+
   server.authorization(function(clientID, redirectURI, done) {
     db.clients.findByClientId(clientID, function(err, client) {
-      if (err) { return done(err); }
+      if (err) {
+        return done(err);
+      }
       // WARNING: For security purposes, it is highly advisable to check that
       //          redirectURI provided by the client matches one registered with
       //          the server.  For simplicity, this example does not.  You have
       //          been warned.
-      return done(null, client, redirectURI);
+      return done(null, client || {id: 'no client'}, redirectURI);
     });
   }),
-  function(req, res){
+
+  // softer error handling
+  function(req, res, next) {
+
     res.render('dialog', { transactionID: req.oauth2.transactionID, user: req.user, client: req.oauth2.client });
-  }
+
+    // if(req.oauth2.client.id === 'no client') {
+    //   return res.send('auth failed');
+    // }
+    // next();
+  },
+
+  // server.decision() // assume correct creds grants permissions; skip dialog for user to approve access
 ]
+
+exports.grant = function(req, res, done) {
+  res.render('tokenrequest', {code: req.query.code});
+}
+
 
 // user decision endpoint
 //
@@ -137,7 +166,13 @@ exports.decision = [
 // authenticate when making requests to this endpoint.
 
 exports.token = [
-  passport.authenticate(['basic', 'oauth2-client-password'], { session: false }),
+  passport.authenticate(
+    [
+      'basic',
+      'oauth2-client-password'
+    ],
+    { session: false }
+  ),
   server.token(),
   server.errorHandler()
 ]

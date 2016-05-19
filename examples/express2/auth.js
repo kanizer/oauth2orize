@@ -81,10 +81,10 @@ passport.use(new ClientPasswordStrategy(
  */
 passport.use(new BearerStrategy(
   function(accessToken, done) {
+    console.log('auth.js: : accessToken:', accessToken);
     db.accessTokens.find(accessToken, function(err, token) {
       if (err) { return done(err); }
       if (!token) { return done(null, false); }
-      
       db.users.find(token.userID, function(err, user) {
         if (err) { return done(err); }
         if (!user) { return done(null, false); }
